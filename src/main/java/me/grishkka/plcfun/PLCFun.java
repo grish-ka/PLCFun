@@ -5,7 +5,6 @@ import io.github.thebusybiscuit.slimefun5.api.items.ItemGroup;
 import io.github.thebusybiscuit.slimefun5.api.items.SlimefunItem;
 import io.github.thebusybiscuit.slimefun5.api.items.SlimefunItemStack;
 import io.github.thebusybiscuit.slimefun5.api.recipes.RecipeType;
-import io.github.thebusybiscuit.slimefun5.implementation.SlimefunItems;
 import io.github.thebusybiscuit.slimefun5.libraries.dough.config.Config;
 import io.github.thebusybiscuit.slimefun5.libraries.keys.NamespacedKey;
 import org.bukkit.Material;
@@ -18,6 +17,8 @@ public class PLCFun extends JavaPlugin implements SlimefunAddon {
     @Override
     public void onEnable() {
         Config cfg = new Config(this);
+
+        printLogo();
 
         // Use Slimefun 5's NamespacedKey
         NamespacedKey categoryId = new NamespacedKey(this, "cool_category");
@@ -33,10 +34,10 @@ public class PLCFun extends JavaPlugin implements SlimefunAddon {
         // Our custom Category
         ItemGroup itemGroup = new ItemGroup(categoryId, categoryItem);
 
-        // The custom item for our SlimefunItem
+// The custom item for our SlimefunItem
         SlimefunItemStack itemStack = new SlimefunItemStack("LAPEACE", Material.LAPIS_LAZULI, "&a NAHH ITS LAPEACEEEEE", "", "&7This is awesome");
 
-        // A 3x3 shape representing our recipe (use .getItem() for Slimefun items)
+// A 3x3 shape representing our recipe
         ItemStack[] recipe = {
                 new ItemStack(Material.DIAMOND),    null,                               new ItemStack(Material.DIAMOND),
                 null,                               new ItemStack(Material.DIAMOND),  null,
@@ -45,10 +46,24 @@ public class PLCFun extends JavaPlugin implements SlimefunAddon {
 
         SlimefunItem sfItem = new SlimefunItem(itemGroup, itemStack, RecipeType.ENHANCED_CRAFTING_TABLE, recipe);
         sfItem.register(this);
+
+        PluginItems.setup(this);
+    }
+
+    private void printLogo() {
+        // Each getLogger().info() prints a clean line to the server console
+        getLogger().info("  _____  _      _____ ______          ");
+        getLogger().info(" |  __ \\| |    / ____|  ____|         ");
+        getLogger().info(" | |__) | |   | |    | |__ _   _ _ __ ");
+        getLogger().info(" |  ___/| |   | |    |  __| | | | '_ \\");
+        getLogger().info(" | |    | |___| |____| |  | |_| | | | |");
+        getLogger().info(" |_|    |______\\_____|_|   \\__,_|_| |_|");
+        getLogger().info(" >> PLCFun Automation Addon Loaded Successfully!");
     }
 
     @Override
     public void onDisable() {
+        getLogger().warning("I AM BEING DISABLED AHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH!");
     }
 
     @Override

@@ -1,9 +1,38 @@
-/bin/
-/.settings/
-/target/
-/.idea/
+# --- Gradle ---
+.gradle/
+**/build/
+build
+!**/src/**/build/
+
+# Ignore Gradle GUI config & caches
+gradle-app.setting
+.gradletasknamecache
+
+# --- Java ---
+*.class
+*.log
+*.jar
+*.war
+*.ear
+hs_err_pid*
+
+# IMPORTANT: Do NOT ignore the Gradle Wrapper jar and properties!
+# (Must come AFTER *.jar so the ! exception works)
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# --- IDEs (IntelliJ IDEA, Eclipse, VS Code) ---
+.idea/
 *.iml
-.project
+*.iws
+*.ipr
+out/
+.settings/
 .classpath
-dependency-reduced-pom.xml
+.project
+.vscode/
+
+# --- OS Generated Files ---
 .DS_Store
+Thumbs.db
+Desktop.ini
