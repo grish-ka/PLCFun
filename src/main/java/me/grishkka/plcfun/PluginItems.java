@@ -65,7 +65,7 @@ public class PluginItems {
         // --- ITEM 3: PLC Lightbulb ---
         SlimefunItemStack lightbulbStack = new SlimefunItemStack(
                 "PLC_LIGHTBULB",
-                Material.COPPER_BULB,
+                Material.WAXED_COPPER_BULB,
                 "&fPLC Lightbulb",
                 "",
                 "&7Lights up when toggled by a linked PLC Switch."
