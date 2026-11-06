@@ -94,4 +94,18 @@ public class PLCDoorbellButton extends SlimefunItem {
                     lightable.setLit(true);
                     targetBlock.setBlockData(lightable, true);
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                        Block
+                        BlockData laterData = targetBlock.getBlockData();
+                        if (laterData instanceof Lightable laterLightable) {
+                            laterLightable.setLit(false);
+                            targetBlock.setBlockData(laterLightable, true);
+                        }
+                    }, 20L);
+                }
+            }
+        }
+
+        if (validEntries.size() != entries.length) {
+            BlockStorage.addBlockInfo(buttonBlock, "linked_outputs", String.join("|", validEntries));
+        }
+    }
+}
