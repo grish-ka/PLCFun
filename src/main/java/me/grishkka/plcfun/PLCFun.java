@@ -34,19 +34,6 @@ public class PLCFun extends JavaPlugin implements SlimefunAddon {
         // Our custom Category
         ItemGroup itemGroup = new ItemGroup(categoryId, categoryItem);
 
-// The custom item for our SlimefunItem
-        SlimefunItemStack itemStack = new SlimefunItemStack("LAPEACE", Material.LAPIS_LAZULI, "&a NAHH ITS LAPEACEEEEE", "", "&7This is awesome");
-
-// A 3x3 shape representing our recipe
-        ItemStack[] recipe = {
-                new ItemStack(Material.DIAMOND),    null,                               new ItemStack(Material.DIAMOND),
-                null,                               new ItemStack(Material.DIAMOND),  null,
-                new ItemStack(Material.DIAMOND),    null,                               new ItemStack(Material.DIAMOND)
-        };
-
-        SlimefunItem sfItem = new SlimefunItem(itemGroup, itemStack, RecipeType.ENHANCED_CRAFTING_TABLE, recipe);
-        sfItem.register(this);
-
         PluginItems.setup(this);
     }
 

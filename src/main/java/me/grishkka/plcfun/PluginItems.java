@@ -30,7 +30,7 @@ public class PluginItems {
 
         plcCategory = new ItemGroup(categoryId, categoryItem);
 
-        // --- 2. Lapeace Item ---
+        // --- ITEM 1: Lapeace ---
         SlimefunItemStack lapeaceStack = new SlimefunItemStack(
                 "LAPEACE",
                 Material.LAPIS_LAZULI,
@@ -45,55 +45,54 @@ public class PluginItems {
         };
         new SlimefunItem(plcCategory, lapeaceStack, RecipeType.ENHANCED_CRAFTING_TABLE, lapeaceRecipe).register(addon);
 
-
-        // --- 3. Data Cable Item ---
+        // --- ITEM 2: Data Cable (Uses custom DataCable class) ---
         SlimefunItemStack cableStack = new SlimefunItemStack(
                 "PLC_DATA_CABLE",
                 Material.STRING,
                 "&bData Cable",
                 "",
-                "&7Used to link PLC components together."
+                "&7Right-click a PLC Lightbulb to select it,",
+                "&7then Shift + Right-click a PLC Switch to link!"
         );
         ItemStack[] cableRecipe = {
                 null,                               new ItemStack(Material.IRON_NUGGET), null,
                 new ItemStack(Material.IRON_NUGGET),new ItemStack(Material.LAPIS_LAZULI),new ItemStack(Material.IRON_NUGGET),
                 null,                               new ItemStack(Material.IRON_NUGGET), null
         };
-        SlimefunItem cableItem = new SlimefunItem(plcCategory, cableStack, RecipeType.ENHANCED_CRAFTING_TABLE, cableRecipe);
+        DataCable cableItem = new DataCable(plugin, plcCategory, cableStack, RecipeType.ENHANCED_CRAFTING_TABLE, cableRecipe);
         cableItem.register(addon);
 
-
-        // --- 4. Switch Item (Using a Lever) ---
-        SlimefunItemStack switchStack = new SlimefunItemStack(
-                "PLC_SWITCH",
-                Material.LEVER,
-                "&ePLC Switch",
-                "",
-                "&7Toggles connected circuits on and off."
-        );
-        ItemStack[] switchRecipe = {
-                new ItemStack(Material.STONE),      new ItemStack(Material.REDSTONE),   new ItemStack(Material.STONE),
-                null,                               cableItem.getItem(),                null, // Use cableItem.getItem() here!
-                null,                               new ItemStack(Material.IRON_INGOT), null
-        };
-        new SlimefunItem(plcCategory, switchStack, RecipeType.ENHANCED_CRAFTING_TABLE, switchRecipe).register(addon);
-
-
-        // --- 5. Lightbulb Item (Using a Copper Bulb) ---
+        // --- ITEM 3: PLC Lightbulb ---
         SlimefunItemStack lightbulbStack = new SlimefunItemStack(
                 "PLC_LIGHTBULB",
                 Material.COPPER_BULB,
                 "&fPLC Lightbulb",
                 "",
-                "&7Lights up when connected to an active switch."
+                "&7Lights up when toggled by a linked PLC Switch."
         );
         ItemStack[] lightbulbRecipe = {
                 null,                               new ItemStack(Material.GLASS),      null,
-                null,                               cableItem.getItem(),                null, // Use cableItem.getItem() here too!
+                null,                               cableItem.getItem(),                null,
                 null,                               new ItemStack(Material.REDSTONE),   null
         };
         new SlimefunItem(plcCategory, lightbulbStack, RecipeType.ENHANCED_CRAFTING_TABLE, lightbulbRecipe).register(addon);
 
-        plugin.getLogger().info("Registered all PLCFun items including Copper Bulb and Lever switch via PluginItems registry!");
+        // --- ITEM 4: PLC Switch (Uses custom PLCSwitch class) ---
+        SlimefunItemStack switchStack = new SlimefunItemStack(
+                "PLC_SWITCH",
+                Material.LEVER,
+                "&ePLC Switch",
+                "",
+                "&7Right-click to toggle a linked PLC Lightbulb."
+        );
+        ItemStack[] switchRecipe = {
+                new ItemStack(Material.STONE),      new ItemStack(Material.REDSTONE),   new ItemStack(Material.STONE),
+                null,                               cableItem.getItem(),                null,
+                null,                               new ItemStack(Material.IRON_INGOT), null
+        };
+        PLCSwitch switchItem = new PLCSwitch(plcCategory, switchStack, RecipeType.ENHANCED_CRAFTING_TABLE, switchRecipe);
+        switchItem.register(addon);
+
+        plugin.getLogger().info("Registered PLCFun items and interaction handlers successfully!");
     }
 }
