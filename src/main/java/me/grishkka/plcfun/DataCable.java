@@ -17,6 +17,9 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 public class DataCable extends SlimefunItem {
@@ -34,13 +37,12 @@ public class DataCable extends SlimefunItem {
         addItemHandler(itemUseHandler);
     }
 
-    private void onCableRightClick( io.github.thebusybiscuit.slimefun5.api.events.PlayerRightClickEvent event) {
+    private void onCableRightClick(io.github.thebusybiscuit.slimefun5.api.events.PlayerRightClickEvent event) {
         Optional<Block> clickedBlockOpt = event.getClickedBlock();
         if (clickedBlockOpt.isEmpty()) {
             return;
         }
 
-        // Cancel default string placement when clicking blocks
         event.cancel();
 
         Block block = clickedBlockOpt.get();
@@ -64,11 +66,11 @@ public class DataCable extends SlimefunItem {
 
             player.sendMessage(ChatColor.AQUA + "[PLCFun] Lightbulb selected at ("
                     + block.getX() + ", " + block.getY() + ", " + block.getZ()
-                    + "). Now Shift + Right-Click a PLC Switch to link!");
+                    + "). Shift + Right-Click a PLC Switch to add it!");
             return;
         }
 
-        // Step 2: Shift + Right-click a PLC Switch to bind the saved Lightbulb
+        // Step 2: Shift + Right-click a PLC Switch to append the Lightbulb to its list
         if (sfId.equals("PLC_SWITCH")) {
             ItemMeta meta = cable.getItemMeta();
             if (meta == null) return;
@@ -79,10 +81,23 @@ public class DataCable extends SlimefunItem {
                 return;
             }
 
-            String locString = pdc.get(targetKey, PersistentDataType.STRING);
-            BlockStorage.addBlockInfo(block, "linked_bulb", locString);
+            String newLoc = pdc.get(targetKey, PersistentDataType.STRING);
+            String existingData = BlockStorage.getLocationInfo(block.getLocation(), "linked_bulbs");
 
-            player.sendMessage(ChatColor.GREEN + "[PLCFun] Successfully linked PLC Switch to the Lightbulb!");
+            List<String> bulbs = new ArrayList<>();
+            if (existingData != null && !existingData.isEmpty()) {
+                bulbs.addAll(Arrays.asList(existingData.split("\\|")));
+            }
+
+            if (bulbs.contains(newLoc)) {
+                player.sendMessage(ChatColor.YELLOW + "[PLCFun] That Lightbulb is already linked to this Switch!");
+                return;
+            }
+
+            bulbs.add(newLoc);
+            BlockStorage.addBlockInfo(block, "linked_bulbs", String.join("|", bulbs));
+
+            player.sendMessage(ChatColor.GREEN + "[PLCFun] Linked Lightbulb! (Total connected: " + bulbs.size() + ")");
         }
     }
 

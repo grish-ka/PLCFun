@@ -16,6 +16,8 @@ import org.bukkit.block.data.Lightable;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public class PLCSwitch extends SlimefunItem {
@@ -38,7 +40,7 @@ public class PLCSwitch extends SlimefunItem {
 
         Player player = event.getPlayer();
 
-        // If the player is sneaking with a Data Cable to link it, let DataCable handle the click
+        // If sneaking with a Data Cable, let DataCable handle the linking
         SlimefunItem heldSfItem = SlimefunItem.getByItem(event.getItem());
         if (player.isSneaking() && heldSfItem != null && heldSfItem.getId().equals("PLC_DATA_CABLE")) {
             event.cancel();
@@ -46,40 +48,55 @@ public class PLCSwitch extends SlimefunItem {
         }
 
         Block switchBlock = clickedBlockOpt.get();
-        String linkedData = BlockStorage.getLocationInfo(switchBlock.getLocation(), "linked_bulb");
+        String linkedData = BlockStorage.getLocationInfo(switchBlock.getLocation(), "linked_bulbs");
 
-        if (linkedData == null) {
-            player.sendMessage(ChatColor.RED + "[PLCFun] This switch isn't linked! Use a Data Cable to link it to a PLC Lightbulb.");
+        if (linkedData == null || linkedData.isEmpty()) {
+            player.sendMessage(ChatColor.RED + "[PLCFun] This switch isn't linked! Use a Data Cable to link it to PLC Lightbulbs.");
             return;
         }
 
-        // Parse "world;x;y;z"
-        String[] parts = linkedData.split(";");
-        if (parts.length != 4) return;
+        String[] entries = linkedData.split("\\|");
+        List<String> validEntries = new ArrayList<>();
 
-        World world = Bukkit.getWorld(parts[0]);
-        if (world == null) return;
+        for (String entry : entries) {
+            String[] parts = entry.split(";");
+            if (parts.length != 4) continue;
 
-        int x = Integer.parseInt(parts[1]);
-        int y = Integer.parseInt(parts[2]);
-        int z = Integer.parseInt(parts[3]);
+            World world = Bukkit.getWorld(parts[0]);
+            if (world == null) continue;
 
-        Block targetBulb = world.getBlockAt(x, y, z);
-        String targetId = BlockStorage.checkID(targetBulb);
+            int x = Integer.parseInt(parts[1]);
+            int y = Integer.parseInt(parts[2]);
+            int z = Integer.parseInt(parts[3]);
 
-        if (targetId == null || !targetId.equals("PLC_LIGHTBULB")) {
-            player.sendMessage(ChatColor.RED + "[PLCFun] Linked PLC Lightbulb is missing or was broken!");
-            return;
+            Block targetBulb = world.getBlockAt(x, y, z);
+            String targetId = BlockStorage.checkID(targetBulb);
+
+            // Skip bulbs that were mined/broken
+            if (targetId == null || !targetId.equals("PLC_LIGHTBULB")) {
+                continue;
+            }
+
+            validEntries.add(entry);
+
+            // Toggle the Copper Bulb's lit state silently
+            BlockData blockData = targetBulb.getBlockData();
+            if (blockData instanceof Lightable lightable) {
+                boolean newState = !lightable.isLit();
+                lightable.setLit(newState);
+                targetBulb.setBlockData(lightable, true);
+
+                world.playSound(targetBulb.getLocation(), Sound.BLOCK_COPPER_BULB_TURN_ON, 1.0f, 1.0f);
+            }
         }
 
-        // Toggle the Copper Bulb's lit state silently (no chat spam)
-        BlockData blockData = targetBulb.getBlockData();
-        if (blockData instanceof Lightable lightable) {
-            boolean newState = !lightable.isLit();
-            lightable.setLit(newState);
-            targetBulb.setBlockData(lightable, true);
+        // Update storage if any broken bulbs were cleaned up
+        if (validEntries.size() != entries.length) {
+            BlockStorage.addBlockInfo(switchBlock, "linked_bulbs", String.join("|", validEntries));
+        }
 
-            world.playSound(targetBulb.getLocation(), Sound.BLOCK_COPPER_BULB_TURN_ON, 1.0f, 1.0f);
+        if (validEntries.isEmpty()) {
+            player.sendMessage(ChatColor.RED + "[PLCFun] All linked PLC Lightbulbs were broken or removed!");
         }
     }
 }
