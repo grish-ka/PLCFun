@@ -72,7 +72,7 @@ public class PLCSwitch extends SlimefunItem {
             return;
         }
 
-        // Toggle the Copper Bulb's lit state
+        // Toggle the Copper Bulb's lit state silently (no chat spam)
         BlockData blockData = targetBulb.getBlockData();
         if (blockData instanceof Lightable lightable) {
             boolean newState = !lightable.isLit();
@@ -80,7 +80,6 @@ public class PLCSwitch extends SlimefunItem {
             targetBulb.setBlockData(lightable, true);
 
             world.playSound(targetBulb.getLocation(), Sound.BLOCK_COPPER_BULB_TURN_ON, 1.0f, 1.0f);
-            player.sendMessage(ChatColor.GREEN + "[PLCFun] Lightbulb turned " + (newState ? "ON" : "OFF") + "!");
         }
     }
 }
