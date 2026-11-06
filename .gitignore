@@ -1,5 +1,5 @@
 # --- Gradle ---
-.gradle2/
+.gradle/
 **/build/
 build
 !**/src/**/build/
