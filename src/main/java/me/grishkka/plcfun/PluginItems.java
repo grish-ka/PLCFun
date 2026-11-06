@@ -93,6 +93,55 @@ public class PluginItems {
         PLCSwitch switchItem = new PLCSwitch(plcCategory, switchStack, RecipeType.ENHANCED_CRAFTING_TABLE, switchRecipe);
         switchItem.register(addon);
 
+        // --- ITEM 5: PLC Chime Speaker ---
+        SlimefunItemStack chimeStack = new SlimefunItemStack(
+                "PLC_CHIME",
+                Material.NOTE_BLOCK,
+                "&dPLC Chime Speaker",
+                "",
+                "&7Plays a two-tone doorbell chime when triggered."
+        );
+        ItemStack[] chimeRecipe = {
+                new ItemStack(Material.OAK_PLANKS), new ItemStack(Material.GOLD_INGOT), new ItemStack(Material.OAK_PLANKS),
+                new ItemStack(Material.OAK_PLANKS), cableItem.getItem(),                new ItemStack(Material.OAK_PLANKS),
+                new ItemStack(Material.OAK_PLANKS), new ItemStack(Material.REDSTONE),   new ItemStack(Material.OAK_PLANKS)
+        };
+        new SlimefunItem(plcCategory, chimeStack, RecipeType.ENHANCED_CRAFTING_TABLE, chimeRecipe).register(addon);
+
+        // --- ITEM 6: PLC Doorbell Button ---
+        SlimefunItemStack doorbellStack = new SlimefunItemStack(
+                "PLC_DOORBELL",
+                Material.POLISHED_BLACKSTONE_BUTTON,
+                "&bPLC Doorbell Button",
+                "",
+                "&7Right-click to ring linked PLC Chimes",
+                "&7and flash linked PLC Lightbulbs!"
+        );
+        ItemStack[] doorbellRecipe = {
+                null,                               new ItemStack(Material.STONE_BUTTON), null,
+                null,                               cableItem.getItem(),                  null,
+                null,                               new ItemStack(Material.REDSTONE),     null
+        };
+        PLCDoorbellButton doorbellItem = new PLCDoorbellButton(plugin, plcCategory, doorbellStack, RecipeType.ENHANCED_CRAFTING_TABLE, doorbellRecipe);
+        doorbellItem.register(addon);
+
+        // --- ITEM 7: PLC Cabinet ---
+        SlimefunItemStack cabinetStack = new SlimefunItemStack(
+                "PLC_CABINET",
+                Material.CHISELED_TUFF,
+                "&6PLC Cabinet",
+                "",
+                "&7Central automation junction box.",
+                "&7Right-click to view and test all wired outputs."
+        );
+        ItemStack[] cabinetRecipe = {
+                new ItemStack(Material.IRON_INGOT), cableItem.getItem(),                new ItemStack(Material.IRON_INGOT),
+                cableItem.getItem(),                new ItemStack(Material.REDSTONE_BLOCK), cableItem.getItem(),
+                new ItemStack(Material.IRON_INGOT), cableItem.getItem(),                new ItemStack(Material.IRON_INGOT)
+        };
+        PLCCabinet cabinetItem = new PLCCabinet(plcCategory, cabinetStack, RecipeType.ENHANCED_CRAFTING_TABLE, cabinetRecipe);
+        cabinetItem.register(addon);
+
         plugin.getLogger().info("Registered PLCFun items and interaction handlers successfully!");
     }
 }

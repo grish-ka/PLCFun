@@ -55,8 +55,8 @@ public class DataCable extends SlimefunItem {
             return;
         }
 
-        // Step 1: Right-click a PLC Lightbulb to select it
-        if (sfId.equals("PLC_LIGHTBULB")) {
+        // Step 1: Select an Output (Lightbulb or Chime)
+        if (sfId.equals("PLC_LIGHTBULB") || sfId.equals("PLC_CHIME")) {
             ItemMeta meta = cable.getItemMeta();
             if (meta == null) return;
 
@@ -64,40 +64,41 @@ public class DataCable extends SlimefunItem {
             meta.getPersistentDataContainer().set(targetKey, PersistentDataType.STRING, locString);
             cable.setItemMeta(meta);
 
-            player.sendMessage(ChatColor.AQUA + "[PLCFun] Lightbulb selected at ("
+            player.sendMessage(ChatColor.AQUA + "[PLCFun] Selected " + sfId + " at ("
                     + block.getX() + ", " + block.getY() + ", " + block.getZ()
-                    + "). Shift + Right-Click a PLC Switch to add it!");
+                    + "). Shift + Right-Click a Switch, Doorbell, or Cabinet to link!");
             return;
         }
 
-        // Step 2: Shift + Right-click a PLC Switch to append the Lightbulb to its list
-        if (sfId.equals("PLC_SWITCH")) {
+        // Step 2: Link into a Controller/Input (Switch, Doorbell Button, or Cabinet)
+        if (sfId.equals("PLC_SWITCH") || sfId.equals("PLC_DOORBELL") || sfId.equals("PLC_CABINET")) {
             ItemMeta meta = cable.getItemMeta();
             if (meta == null) return;
 
             PersistentDataContainer pdc = meta.getPersistentDataContainer();
             if (!pdc.has(targetKey, PersistentDataType.STRING)) {
-                player.sendMessage(ChatColor.YELLOW + "[PLCFun] Right-click a PLC Lightbulb with this cable first!");
+                player.sendMessage(ChatColor.YELLOW + "[PLCFun] Right-click a PLC Lightbulb or Chime with this cable first!");
                 return;
             }
 
+            String storageKey = sfId.equals("PLC_SWITCH") ? "linked_bulbs" : "linked_outputs";
             String newLoc = pdc.get(targetKey, PersistentDataType.STRING);
-            String existingData = BlockStorage.getLocationInfo(block.getLocation(), "linked_bulbs");
+            String existingData = BlockStorage.getLocationInfo(block.getLocation(), storageKey);
 
-            List<String> bulbs = new ArrayList<>();
+            List<String> outputs = new ArrayList<>();
             if (existingData != null && !existingData.isEmpty()) {
-                bulbs.addAll(Arrays.asList(existingData.split("\\|")));
+                outputs.addAll(Arrays.asList(existingData.split("\\|")));
             }
 
-            if (bulbs.contains(newLoc)) {
-                player.sendMessage(ChatColor.YELLOW + "[PLCFun] That Lightbulb is already linked to this Switch!");
+            if (outputs.contains(newLoc)) {
+                player.sendMessage(ChatColor.YELLOW + "[PLCFun] That device is already linked to this " + sfId + "!");
                 return;
             }
 
-            bulbs.add(newLoc);
-            BlockStorage.addBlockInfo(block, "linked_bulbs", String.join("|", bulbs));
+            outputs.add(newLoc);
+            BlockStorage.addBlockInfo(block, storageKey, String.join("|", outputs));
 
-            player.sendMessage(ChatColor.GREEN + "[PLCFun] Linked Lightbulb! (Total connected: " + bulbs.size() + ")");
+            player.sendMessage(ChatColor.GREEN + "[PLCFun] Linked output to " + sfId + "! (Total connected: " + outputs.size() + ")");
         }
     }
 
