@@ -1,0 +1,19 @@
+items:
+  LAPEACE:
+    name: "&a NAHH ITS LAPEACEEEEE"
+  PLC_DATA_CABLE:
+    name: "&bData Cable"
+  PLC_LIGHTBULB:
+    name: "&fPLC Lightbulb"
+  PLC_SWITCH:
+    name: "&ePLC Switch"
+  PLC_DOORBELL:
+    name: "&bPLC Doorbell Button"
+  PLC_CHIME:
+    name: "&dPLC Chime Speaker"
+  PLC_CABINET:
+    name: "&6PLC Cabinet"
+  PLC_WIRE_CUTTER:
+    name: "&cPLC Wire Cutters"
+  PLC_AND_GATE:
+    name: "&ePLC Logic Gate (AND)"
