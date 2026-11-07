@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'com.grishkka'
-version = '0.1.0+bukkit'
+version = '0.2.0-alpha.1+bukkit'
 
 repositories {
     mavenCentral()

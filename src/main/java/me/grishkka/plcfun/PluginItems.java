@@ -142,6 +142,40 @@ public class PluginItems {
         PLCCabinet cabinetItem = new PLCCabinet(plcCategory, cabinetStack, RecipeType.ENHANCED_CRAFTING_TABLE, cabinetRecipe);
         cabinetItem.register(addon);
 
+        // --- ITEM 8: Wire Cutters ---
+        SlimefunItemStack cutterStack = new SlimefunItemStack(
+                "PLC_WIRE_CUTTER",
+                Material.SHEARS,
+                "&cPLC Wire Cutters",
+                "",
+                "&7Right-click a component to inspect connections.",
+                "&cShift + Right-click to sever all links!"
+        );
+        ItemStack[] cutterRecipe = {
+                null,                               new ItemStack(Material.IRON_INGOT), null,
+                new ItemStack(Material.IRON_INGOT), cableItem.getItem(),                null,
+                null,                               null,                               new ItemStack(Material.SHEARS)
+        };
+        PLCWireCutter cutterItem = new PLCWireCutter(plcCategory, cutterStack, RecipeType.ENHANCED_CRAFTING_TABLE, cutterRecipe);
+        cutterItem.register(addon);
+
+        // --- ITEM 9: AND Gate ---
+        SlimefunItemStack andGateStack = new SlimefunItemStack(
+                "PLC_AND_GATE",
+                Material.REPEATER,
+                "&ePLC Logic Gate (AND)",
+                "",
+                "&7Only powers outputs when ALL connected",
+                "&7inputs are active simultaneously."
+        );
+        ItemStack[] andGateRecipe = {
+                new ItemStack(Material.REDSTONE_TORCH), cableItem.getItem(),                new ItemStack(Material.REDSTONE_TORCH),
+                cableItem.getItem(),                    new ItemStack(Material.SMOOTH_STONE), cableItem.getItem(),
+                new ItemStack(Material.REDSTONE),       cableItem.getItem(),                new ItemStack(Material.REDSTONE)
+        };
+        PLCAndGate andGateItem = new PLCAndGate(plcCategory, andGateStack, RecipeType.ENHANCED_CRAFTING_TABLE, andGateRecipe);
+        andGateItem.register(addon);
+
         plugin.getLogger().info("Registered PLCFun items and interaction handlers successfully!");
     }
 }
