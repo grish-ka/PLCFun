@@ -40,7 +40,7 @@ public class PLCSwitch extends SlimefunItem {
 
         Player player = event.getPlayer();
 
-        // If sneaking with a Data Cable, let DataCable handle the linking
+        // Let DataCable handle Shift + Right-Click linking without triggering the switch
         SlimefunItem heldSfItem = SlimefunItem.getByItem(event.getItem());
         if (player.isSneaking() && heldSfItem != null && heldSfItem.getId().equals("PLC_DATA_CABLE")) {
             event.cancel();
@@ -48,76 +48,87 @@ public class PLCSwitch extends SlimefunItem {
         }
 
         Block switchBlock = clickedBlockOpt.get();
-        String linkedData = BlockStorage.getLocationInfo(switchBlock.getLocation(), "linked_bulbs");
+        String linkedBulbs = BlockStorage.getLocationInfo(switchBlock.getLocation(), "linked_bulbs");
+        String linkedGates = BlockStorage.getLocationInfo(switchBlock.getLocation(), "linked_gates");
 
-        if (linkedData == null || linkedData.isEmpty()) {
-            player.sendMessage(ChatColor.RED + "[PLCFun] This switch isn't linked! Use a Data Cable to link it to PLC Lightbulbs.");
+        boolean hasBulbs = linkedBulbs != null && !linkedBulbs.isEmpty();
+        boolean hasGates = linkedGates != null && !linkedGates.isEmpty();
+
+        if (!hasBulbs && !hasGates) {
+            player.sendMessage(ChatColor.RED + "[PLCFun] This switch isn't linked! Use a Data Cable to link it to a Lightbulb or AND Gate.");
             return;
         }
 
-        String[] entries = linkedData.split("\\|");
-        List<String> validEntries = new ArrayList<>();
+        // Toggle state for this switch in BlockStorage
+        String stateStr = BlockStorage.getLocationInfo(switchBlock.getLocation(), "is_on");
+        boolean newState = stateStr == null || !Boolean.parseBoolean(stateStr);
+        BlockStorage.addBlockInfo(switchBlock, "is_on", String.valueOf(newState));
 
-        for (String entry : entries) {
-            String[] parts = entry.split(";");
-            if (parts.length != 4) continue;
+        // 1. Toggle directly linked Lightbulbs
+        if (hasBulbs) {
+            String[] entries = linkedBulbs.split("\\|");
+            List<String> validEntries = new ArrayList<>();
 
-            World world = Bukkit.getWorld(parts[0]);
-            if (world == null) continue;
+            for (String entry : entries) {
+                String[] parts = entry.split(";");
+                if (parts.length != 4) continue;
 
-            int x = Integer.parseInt(parts[1]);
-            int y = Integer.parseInt(parts[2]);
-            int z = Integer.parseInt(parts[3]);
+                World world = Bukkit.getWorld(parts[0]);
+                if (world == null) continue;
 
-            Block targetBulb = world.getBlockAt(x, y, z);
-            String targetId = BlockStorage.checkID(targetBulb);
+                int x = Integer.parseInt(parts[1]);
+                int y = Integer.parseInt(parts[2]);
+                int z = Integer.parseInt(parts[3]);
 
-            // Skip bulbs that were mined/broken
-            if (targetId == null || !targetId.equals("PLC_LIGHTBULB")) {
-                continue;
-            }
+                Block targetBulb = world.getBlockAt(x, y, z);
+                String targetId = BlockStorage.checkID(targetBulb);
 
-            validEntries.add(entry);
-
-            // Toggle the Copper Bulb's lit state silently
-            BlockData blockData = targetBulb.getBlockData();
-            if (blockData instanceof Lightable lightable) {
-                boolean newState = !lightable.isLit();
-                lightable.setLit(newState);
-                targetBulb.setBlockData(lightable, true);
-
-                world.playSound(targetBulb.getLocation(), Sound.BLOCK_COPPER_BULB_TURN_ON, 1.0f, 1.0f);
-            }
-        }
-
-        // Update storage if any broken bulbs were cleaned up
-        if (validEntries.size() != entries.length) {
-            BlockStorage.addBlockInfo(switchBlock, "linked_bulbs", String.join("|", validEntries));
-        }
-
-        if (validEntries.isEmpty()) {
-            player.sendMessage(ChatColor.RED + "[PLCFun] All linked PLC Lightbulbs were broken or removed!");
-        }
-        // Notify any linked AND Gates
-        String linkedGates = BlockStorage.getLocationInfo(switchBlock.getLocation(), "linked_gates");
-        if (linkedGates != null && !linkedGates.isEmpty()) {
-            String switchLoc = switchBlock.getWorld().getName() + ";" + switchBlock.getX() + ";" + switchBlock.getY() + ";" + switchBlock.getZ();
-            // Use lever lit/power state or a stored toggle flag:
-            String stateStr = BlockStorage.getLocationInfo(switchBlock.getLocation(), "is_on");
-            boolean isOn = stateStr == null || !Boolean.parseBoolean(stateStr);
-            BlockStorage.addBlockInfo(switchBlock, "is_on", String.valueOf(isOn));
-
-            for (String gateEntry : linkedGates.split("\\|")) {
-                String[] p = gateEntry.split(";");
-                if (p.length == 4) {
-                    World w = Bukkit.getWorld(p[0]);
-                    if (w != null) {
-                        Block gateBlock = w.getBlockAt(Integer.parseInt(p[1]), Integer.parseInt(p[2]), Integer.parseInt(p[3]));
-                        if ("PLC_AND_GATE".equals(BlockStorage.checkID(gateBlock))) {
-                            PLCAndGate.updateGate(gateBlock, switchLoc, isOn);
-                        }
-                    }
+                // Auto-cleanup for broken or missing bulbs
+                if (targetId == null || !targetId.equals("PLC_LIGHTBULB")) {
+                    continue;
                 }
+
+                validEntries.add(entry);
+
+                BlockData blockData = targetBulb.getBlockData();
+                if (blockData instanceof Lightable lightable) {
+                    lightable.setLit(newState);
+                    targetBulb.setBlockData(lightable, true);
+                    world.playSound(targetBulb.getLocation(), Sound.BLOCK_COPPER_BULB_TURN_ON, 1.0f, 1.0f);
+                }
+            }
+
+            // Save cleaned list back to BlockStorage if any missing bulbs were pruned
+            if (validEntries.size() != entries.length) {
+                BlockStorage.addBlockInfo(switchBlock, "linked_bulbs", String.join("|", validEntries));
+            }
+        }
+
+        // 2. Notify linked Logic Gates (e.g., AND Gates)
+        if (hasGates) {
+            String switchLoc = switchBlock.getWorld().getName() + ";" + switchBlock.getX() + ";" + switchBlock.getY() + ";" + switchBlock.getZ();
+            String[] gateEntries = linkedGates.split("\\|");
+            List<String> validGates = new ArrayList<>();
+
+            for (String gateEntry : gateEntries) {
+                String[] p = gateEntry.split(";");
+                if (p.length != 4) continue;
+
+                World w = Bukkit.getWorld(p[0]);
+                if (w == null) continue;
+
+                Block gateBlock = w.getBlockAt(Integer.parseInt(p[1]), Integer.parseInt(p[2]), Integer.parseInt(p[3]));
+                String gateId = BlockStorage.checkID(gateBlock);
+
+                if ("PLC_AND_GATE".equals(gateId)) {
+                    validGates.add(gateEntry);
+                    PLCAndGate.updateGate(gateBlock, switchLoc, newState);
+                }
+            }
+
+            // Prune broken gates
+            if (validGates.size() != gateEntries.length) {
+                BlockStorage.addBlockInfo(switchBlock, "linked_gates", String.join("|", validGates));
             }
         }
     }
