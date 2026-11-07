@@ -25,10 +25,12 @@ import java.util.Optional;
 public class DataCable extends SlimefunItem {
 
     private final NamespacedKey targetKey;
+    private final NamespacedKey targetTypeKey;
 
     public DataCable(JavaPlugin plugin, ItemGroup itemGroup, SlimefunItemStack item, RecipeType recipeType, ItemStack[] recipe) {
         super(itemGroup, item, recipeType, recipe);
-        this.targetKey = new NamespacedKey(plugin, "linked_bulb_loc");
+        this.targetKey = new NamespacedKey(plugin, "linked_target_loc");
+        this.targetTypeKey = new NamespacedKey(plugin, "linked_target_type");
     }
 
     @Override
@@ -55,54 +57,93 @@ public class DataCable extends SlimefunItem {
             return;
         }
 
-        // Step 1: Select an Output (Lightbulb or Chime)
-        if (sfId.equals("PLC_LIGHTBULB") || sfId.equals("PLC_CHIME")) {
+        // STEP 1: Right-Click to select a source / output block
+        if (!player.isSneaking()) {
             ItemMeta meta = cable.getItemMeta();
             if (meta == null) return;
 
             String locString = serializeLocation(block.getLocation());
-            meta.getPersistentDataContainer().set(targetKey, PersistentDataType.STRING, locString);
+            PersistentDataContainer pdc = meta.getPersistentDataContainer();
+            pdc.set(targetKey, PersistentDataType.STRING, locString);
+            pdc.set(targetTypeKey, PersistentDataType.STRING, sfId);
             cable.setItemMeta(meta);
 
-            player.sendMessage(ChatColor.AQUA + "[PLCFun] Selected " + sfId + " at ("
-                    + block.getX() + ", " + block.getY() + ", " + block.getZ()
-                    + "). Shift + Right-Click a Switch, Doorbell, or Cabinet to link!");
+            if (sfId.equals("PLC_LIGHTBULB") || sfId.equals("PLC_CHIME")) {
+                player.sendMessage(ChatColor.AQUA + "[PLCFun] Selected Output (" + sfId + "). Shift + Right-Click a Switch, Cabinet, or AND Gate to link!");
+            } else if (sfId.equals("PLC_AND_GATE")) {
+                player.sendMessage(ChatColor.AQUA + "[PLCFun] Selected AND Gate. Shift + Right-Click a Switch or Doorbell to add it as an INPUT!");
+            } else {
+                player.sendMessage(ChatColor.AQUA + "[PLCFun] Selected " + sfId + " at (" + block.getX() + ", " + block.getY() + ", " + block.getZ() + ").");
+            }
             return;
         }
 
-        // Step 2: Link into a Controller/Input (Switch, Doorbell Button, or Cabinet)
+        // STEP 2: Shift + Right-Click to connect the saved item to the clicked block
+        ItemMeta meta = cable.getItemMeta();
+        if (meta == null) return;
+
+        PersistentDataContainer pdc = meta.getPersistentDataContainer();
+        if (!pdc.has(targetKey, PersistentDataType.STRING) || !pdc.has(targetTypeKey, PersistentDataType.STRING)) {
+            player.sendMessage(ChatColor.YELLOW + "[PLCFun] Right-click a component without sneaking first to select it!");
+            return;
+        }
+
+        String sourceLoc = pdc.get(targetKey, PersistentDataType.STRING);
+        String sourceType = pdc.get(targetTypeKey, PersistentDataType.STRING);
+
+        // Case A: Link selected Output (Bulb / Chime) into AND Gate
+        if (sfId.equals("PLC_AND_GATE") && (sourceType.equals("PLC_LIGHTBULB") || sourceType.equals("PLC_CHIME"))) {
+            addEntryToStorage(block, "linked_outputs", sourceLoc);
+            player.sendMessage(ChatColor.GREEN + "[PLCFun] Linked " + sourceType + " as an OUTPUT of the AND Gate!");
+            return;
+        }
+
+        // Case B: Link selected AND Gate into an Input Switch / Doorbell
+        if ((sfId.equals("PLC_SWITCH") || sfId.equals("PLC_DOORBELL")) && sourceType.equals("PLC_AND_GATE")) {
+            // Tell the AND Gate about this new input switch
+            Location gateLoc = parseLocation(sourceLoc);
+            if (gateLoc != null && gateLoc.getBlock() != null) {
+                String thisSwitchLoc = serializeLocation(block.getLocation());
+                addEntryToStorage(gateLoc.getBlock(), "gate_inputs", thisSwitchLoc);
+            }
+            // Tell the switch where its target gate is
+            addEntryToStorage(block, "linked_gates", sourceLoc);
+            player.sendMessage(ChatColor.GREEN + "[PLCFun] Linked " + sfId + " as an INPUT to the AND Gate!");
+            return;
+        }
+
+        // Case C: Standard linking to Switches, Cabinets, or Doorbells
         if (sfId.equals("PLC_SWITCH") || sfId.equals("PLC_DOORBELL") || sfId.equals("PLC_CABINET")) {
-            ItemMeta meta = cable.getItemMeta();
-            if (meta == null) return;
-
-            PersistentDataContainer pdc = meta.getPersistentDataContainer();
-            if (!pdc.has(targetKey, PersistentDataType.STRING)) {
-                player.sendMessage(ChatColor.YELLOW + "[PLCFun] Right-click a PLC Lightbulb or Chime with this cable first!");
-                return;
-            }
-
             String storageKey = sfId.equals("PLC_SWITCH") ? "linked_bulbs" : "linked_outputs";
-            String newLoc = pdc.get(targetKey, PersistentDataType.STRING);
-            String existingData = BlockStorage.getLocationInfo(block.getLocation(), storageKey);
+            addEntryToStorage(block, storageKey, sourceLoc);
+            player.sendMessage(ChatColor.GREEN + "[PLCFun] Linked " + sourceType + " to " + sfId + "!");
+            return;
+        }
 
-            List<String> outputs = new ArrayList<>();
-            if (existingData != null && !existingData.isEmpty()) {
-                outputs.addAll(Arrays.asList(existingData.split("\\|")));
-            }
+        player.sendMessage(ChatColor.RED + "[PLCFun] Cannot link " + sourceType + " to " + sfId + ".");
+    }
 
-            if (outputs.contains(newLoc)) {
-                player.sendMessage(ChatColor.YELLOW + "[PLCFun] That device is already linked to this " + sfId + "!");
-                return;
-            }
-
-            outputs.add(newLoc);
-            BlockStorage.addBlockInfo(block, storageKey, String.join("|", outputs));
-
-            player.sendMessage(ChatColor.GREEN + "[PLCFun] Linked output to " + sfId + "! (Total connected: " + outputs.size() + ")");
+    private void addEntryToStorage(Block block, String key, String newEntry) {
+        String existingData = BlockStorage.getLocationInfo(block.getLocation(), key);
+        List<String> list = new ArrayList<>();
+        if (existingData != null && !existingData.isEmpty()) {
+            list.addAll(Arrays.asList(existingData.split("\\|")));
+        }
+        if (!list.contains(newEntry)) {
+            list.add(newEntry);
+            BlockStorage.addBlockInfo(block, key, String.join("|", list));
         }
     }
 
     private String serializeLocation(Location loc) {
         return loc.getWorld().getName() + ";" + loc.getBlockX() + ";" + loc.getBlockY() + ";" + loc.getBlockZ();
+    }
+
+    private Location parseLocation(String str) {
+        String[] parts = str.split(";");
+        if (parts.length != 4) return null;
+        org.bukkit.World world = org.bukkit.Bukkit.getWorld(parts[0]);
+        if (world == null) return null;
+        return new Location(world, Integer.parseInt(parts[1]), Integer.parseInt(parts[2]), Integer.parseInt(parts[3]));
     }
 }
