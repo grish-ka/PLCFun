@@ -98,5 +98,27 @@ public class PLCSwitch extends SlimefunItem {
         if (validEntries.isEmpty()) {
             player.sendMessage(ChatColor.RED + "[PLCFun] All linked PLC Lightbulbs were broken or removed!");
         }
+        // Notify any linked AND Gates
+        String linkedGates = BlockStorage.getLocationInfo(switchBlock.getLocation(), "linked_gates");
+        if (linkedGates != null && !linkedGates.isEmpty()) {
+            String switchLoc = switchBlock.getWorld().getName() + ";" + switchBlock.getX() + ";" + switchBlock.getY() + ";" + switchBlock.getZ();
+            // Use lever lit/power state or a stored toggle flag:
+            String stateStr = BlockStorage.getLocationInfo(switchBlock.getLocation(), "is_on");
+            boolean isOn = stateStr == null || !Boolean.parseBoolean(stateStr);
+            BlockStorage.addBlockInfo(switchBlock, "is_on", String.valueOf(isOn));
+
+            for (String gateEntry : linkedGates.split("\\|")) {
+                String[] p = gateEntry.split(";");
+                if (p.length == 4) {
+                    World w = Bukkit.getWorld(p[0]);
+                    if (w != null) {
+                        Block gateBlock = w.getBlockAt(Integer.parseInt(p[1]), Integer.parseInt(p[2]), Integer.parseInt(p[3]));
+                        if ("PLC_AND_GATE".equals(BlockStorage.checkID(gateBlock))) {
+                            PLCAndGate.updateGate(gateBlock, switchLoc, isOn);
+                        }
+                    }
+                }
+            }
+        }
     }
 }
